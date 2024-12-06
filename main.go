@@ -100,7 +100,7 @@ func main() {
 	flag.StringVar(&suffix, "suffix", "", "suffix of result html")
 	flag.Parse()
 
-	if !strings.HasPrefix(src, ".md") {
+	if !strings.HasSuffix(src, ".md") {
 		fmt.Printf("invalid path: %s\n", src)
 		os.Exit(1)
 	}
