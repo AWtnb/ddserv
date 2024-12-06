@@ -153,7 +153,7 @@ func getLastModTime(src string) string {
 	return fi.ModTime().Format("2006-01-02")
 }
 
-func NewTimestampNode(src string) *html.Node {
+func newTimestampNode(src string) *html.Node {
 	d := newDivNode()
 	appendClass(d, "timestamp")
 	m := getLastModTime(src)

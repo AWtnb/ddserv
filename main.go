@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
 	"os"
@@ -9,12 +8,8 @@ import (
 	"strings"
 
 	"github.com/AWtnb/m2h/dom"
-	"github.com/AWtnb/m2h/frontmatter"
-	"github.com/yuin/goldmark"
+	"github.com/AWtnb/m2h/md"
 	meta "github.com/yuin/goldmark-meta"
-	"github.com/yuin/goldmark/extension"
-	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/renderer/html"
 )
 
 func writeFile(t, out string) error {
@@ -31,30 +26,13 @@ func writeFile(t, out string) error {
 }
 
 func render(src, css, suffix string) error {
-	bs, err := os.ReadFile(src)
+	mu, ctx, err := md.FromFile(src)
 	if err != nil {
 		return err
 	}
 
-	md := goldmark.New(
-		goldmark.WithExtensions(extension.GFM, meta.Meta),
-		goldmark.WithParserOptions(
-			parser.WithAutoHeadingID(),
-		),
-		goldmark.WithRendererOptions(
-			html.WithHardWraps(),
-			html.WithUnsafe(),
-		),
-	)
-
-	var buf bytes.Buffer
-	context := parser.NewContext()
-	if err := md.Convert(bs, &buf, parser.WithContext(context)); err != nil {
-		return err
-	}
-
-	var fm frontmatter.Frontmatter
-	fm.Init(src, meta.Get(context))
+	var fm md.Frontmatter
+	fm.Init(src, meta.Get(ctx))
 
 	doc := dom.NewHtmlNode("ja")
 
@@ -62,15 +40,15 @@ func render(src, css, suffix string) error {
 	dom.AppendStyles(h, fm.GetCSSs())
 	doc.AppendChild(h)
 
-	var cont dom.MainContainer
-	if err := cont.Init(buf.String()); err != nil {
+	var mn dom.MainNode
+	if err := mn.Init(src, mu); err != nil {
 		return err
 	}
 
+	c := mn.AsContainerNode()
+
 	b := dom.NewBodyNode()
-	b.AppendChild(dom.NewTimestampNode(src))
-	b.AppendChild(cont.GetTOC())
-	b.AppendChild(cont.GetTree())
+	b.AppendChild(c)
 
 	doc.AppendChild(b)
 
