@@ -7,9 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/AWtnb/m2h/dom"
-	"github.com/AWtnb/m2h/md"
-	meta "github.com/yuin/goldmark-meta"
+	"github.com/AWtnb/m2h/domtree"
+	"github.com/AWtnb/m2h/frontmatter"
 )
 
 func writeFile(t, out string) error {
@@ -26,34 +25,25 @@ func writeFile(t, out string) error {
 }
 
 func render(src, css, suffix string) error {
-	mu, ctx, err := md.FromFile(src)
-	if err != nil {
+	var dt domtree.DomTree
+	if err := dt.Init(src); err != nil {
 		return err
 	}
 
-	var fm md.Frontmatter
-	fm.Init(src, meta.Get(ctx))
+	var fm frontmatter.Frontmatter
+	fm.Init(src, dt.GetMetaData())
 
-	doc := dom.NewHtmlNode("ja")
+	doc := domtree.NewHtmlNode("ja")
 
-	h := dom.NewHeadNode(fm.GetTitle(), css)
-	dom.AppendStyles(h, fm.GetCSSs())
+	h := domtree.NewHeadNode(fm.GetTitle(), css)
+	domtree.AppendStyles(h, fm.GetCSSs())
 	doc.AppendChild(h)
 
-	var mn dom.MainNode
-	if err := mn.Init(src, mu); err != nil {
-		return err
-	}
-
-	c := mn.AsContainerNode()
-
-	b := dom.NewBodyNode()
-	b.AppendChild(c)
-
+	b := dt.AsBodyNode()
 	doc.AppendChild(b)
 
 	o := strings.TrimSuffix(src, filepath.Ext(src)) + suffix + ".html"
-	writeFile(dom.Decode(doc), o)
+	writeFile(domtree.Decode(doc), o)
 
 	return nil
 }

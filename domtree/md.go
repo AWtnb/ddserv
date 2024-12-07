@@ -1,4 +1,4 @@
-package md
+package domtree
 
 import (
 	"bytes"
@@ -11,7 +11,7 @@ import (
 	"github.com/yuin/goldmark/renderer/html"
 )
 
-func FromFile(src string) (markup string, context parser.Context, err error) {
+func fromFile(src string) (markup string, context parser.Context, err error) {
 	bs, err := os.ReadFile(src)
 	if err != nil {
 		return

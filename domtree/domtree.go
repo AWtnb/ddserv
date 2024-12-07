@@ -1,37 +1,54 @@
-package dom
+package domtree
 
 import (
 	"fmt"
 	"strings"
 
+	meta "github.com/yuin/goldmark-meta"
+	"github.com/yuin/goldmark/parser"
 	"golang.org/x/net/html"
+	"golang.org/x/net/html/atom"
 )
 
-type MainNode struct {
+type DomTree struct {
 	root      *html.Node
+	context   parser.Context
 	timestamp *html.Node
 }
 
-func (mn *MainNode) Init(src, markup string) error {
-	nodes, err := html.ParseFragment(strings.NewReader(markup), newDivNode())
+func (dt *DomTree) Init(src string) error {
+	mu, ctx, err := fromFile(src)
 	if err != nil {
 		return err
 	}
+	dt.context = ctx
+
+	nodes, err := html.ParseFragment(strings.NewReader(mu), newDivNode())
+	if err != nil {
+		return err
+	}
+
 	d := newDivNode()
-	appendClass(d, "main")
+	setId(d, "main")
+
 	for _, n := range nodes {
 		d.AppendChild(n)
 	}
-	mn.root = d
-	mn.timestamp = newTimestampNode(src)
+	dt.root = d
+
+	dt.timestamp = newTimestampNode(src)
+
 	return nil
 }
 
-func (mn MainNode) getTOC() *html.Node {
-	d := newDivNode()
-	appendClass(d, "toc")
+func (dt DomTree) GetMetaData() map[string]interface{} {
+	return meta.Get(dt.context)
+}
 
-	headers := findElements(mn.root, []string{"h2", "h3", "h4", "h5", "h6"})
+func (dt DomTree) getTOC() *html.Node {
+	d := newDivNode()
+
+	headers := findElements(dt.root, []string{"h2", "h3", "h4", "h5", "h6"})
 	if len(headers) > 0 {
 		ul := newUlNode()
 		for _, header := range headers {
@@ -48,10 +65,11 @@ func (mn MainNode) getTOC() *html.Node {
 		d.AppendChild(ul)
 	}
 
+	setId(d, "toc")
 	return d
 }
 
-func (mn *MainNode) renderArrowList() {
+func (dt *DomTree) renderArrowList() {
 	s := "=>"
 	var dfs func(*html.Node)
 	dfs = func(node *html.Node) {
@@ -65,10 +83,10 @@ func (mn *MainNode) renderArrowList() {
 			dfs(c)
 		}
 	}
-	dfs(mn.root)
+	dfs(dt.root)
 }
 
-func (mn *MainNode) renderBlankList() {
+func (dt *DomTree) renderBlankList() {
 	var dfs func(*html.Node)
 	dfs = func(node *html.Node) {
 		if node.Type == html.ElementNode && node.Data == "li" {
@@ -80,11 +98,11 @@ func (mn *MainNode) renderBlankList() {
 			dfs(c)
 		}
 	}
-	dfs(mn.root)
+	dfs(dt.root)
 }
 
-func (mn *MainNode) renderPageBreak() {
-	for c := mn.root.FirstChild; c != nil; c = c.NextSibling {
+func (dt *DomTree) renderPageBreak() {
+	for c := dt.root.FirstChild; c != nil; c = c.NextSibling {
 		if c.Type == html.ElementNode && c.Data == "p" {
 			if len(strings.ReplaceAll(c.FirstChild.Data, "=", "")) < 1 {
 				c.FirstChild = nil
@@ -94,7 +112,7 @@ func (mn *MainNode) renderPageBreak() {
 	}
 }
 
-func (mn *MainNode) renderPDFLink() {
+func (dt *DomTree) renderPDFLink() {
 	var dfs func(*html.Node)
 	dfs = func(node *html.Node) {
 		if node.Type == html.ElementNode && node.Data == "a" {
@@ -106,10 +124,10 @@ func (mn *MainNode) renderPDFLink() {
 			dfs(c)
 		}
 	}
-	dfs(mn.root)
+	dfs(dt.root)
 }
 
-func (mn *MainNode) renderCodeblockLabel() {
+func (dt *DomTree) renderCodeblockLabel() {
 	var dfs func(*html.Node)
 	dfs = func(node *html.Node) {
 		if node.Type == html.ElementNode && node.Data == "code" {
@@ -125,10 +143,10 @@ func (mn *MainNode) renderCodeblockLabel() {
 			dfs(c)
 		}
 	}
-	dfs(mn.root)
+	dfs(dt.root)
 }
 
-func (mn *MainNode) fixHeadingSpacing() {
+func (dt *DomTree) fixHeadingSpacing() {
 	var dfs func(*html.Node)
 	dfs = func(node *html.Node) {
 		if node.Type == html.ElementNode && isHeadingElem(node) && node.FirstChild != nil {
@@ -143,10 +161,10 @@ func (mn *MainNode) fixHeadingSpacing() {
 			dfs(c)
 		}
 	}
-	dfs(mn.root)
+	dfs(dt.root)
 }
 
-func (mn *MainNode) setLinkTarget() {
+func (dt *DomTree) setLinkTarget() {
 	var dfs func(*html.Node)
 	dfs = func(node *html.Node) {
 		if node.Type == html.ElementNode && node.Data == "a" {
@@ -160,10 +178,10 @@ func (mn *MainNode) setLinkTarget() {
 			dfs(c)
 		}
 	}
-	dfs(mn.root)
+	dfs(dt.root)
 }
 
-func (mn *MainNode) setImageContainer() {
+func (dt *DomTree) setImageContainer() {
 	var dfs func(*html.Node)
 	dfs = func(node *html.Node) {
 		if node.Type == html.ElementNode && node.Data == "p" {
@@ -192,29 +210,31 @@ func (mn *MainNode) setImageContainer() {
 			dfs(c)
 		}
 	}
-	dfs(mn.root)
+	dfs(dt.root)
 }
 
-func (mn *MainNode) applyAll() {
-	mn.renderArrowList()
-	mn.renderBlankList()
-	mn.renderPageBreak()
-	mn.renderPDFLink()
-	mn.renderCodeblockLabel()
-	mn.fixHeadingSpacing()
-	mn.setLinkTarget()
-	mn.setImageContainer()
+func (dt *DomTree) applyAll() {
+	dt.renderArrowList()
+	dt.renderBlankList()
+	dt.renderPageBreak()
+	dt.renderPDFLink()
+	dt.renderCodeblockLabel()
+	dt.fixHeadingSpacing()
+	dt.setLinkTarget()
+	dt.setImageContainer()
 }
 
-func (mn *MainNode) AsContainerNode() *html.Node {
-	mn.applyAll()
-
-	mn.root.InsertBefore(mn.timestamp, mn.root.FirstChild)
-
+func (dt *DomTree) AsBodyNode() *html.Node {
+	dt.applyAll()
 	d := newDivNode()
-	appendClass(d, "container")
-	d.AppendChild(mn.getTOC())
-	d.AppendChild(mn.root)
+	d.AppendChild(dt.root)
+	setId(d, "container")
 
-	return d
+	d.InsertBefore(dt.timestamp, d.FirstChild)
+	d.InsertBefore(dt.getTOC(), d.FirstChild)
+
+	b := newElementNode("body", atom.Body)
+	b.AppendChild(d)
+
+	return b
 }

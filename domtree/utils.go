@@ -1,4 +1,4 @@
-package dom
+package domtree
 
 import (
 	"bytes"
@@ -20,6 +20,21 @@ func classAttr(val string) html.Attribute {
 
 func appendAttr(node *html.Node, name, val string) {
 	node.Attr = append(node.Attr, elemAttr(name, val))
+}
+
+func removeAttr(node *html.Node, name string) {
+	attrs := []html.Attribute{}
+	for _, attr := range node.Attr {
+		if attr.Key != name {
+			attrs = append(attrs, attr)
+		}
+	}
+	node.Attr = attrs
+}
+
+func setId(node *html.Node, id string) {
+	removeAttr(node, "id")
+	appendAttr(node, "id", id)
 }
 
 func appendClass(node *html.Node, val string) {
@@ -50,9 +65,9 @@ func findElements(node *html.Node, tags []string) []*html.Node {
 	return elements
 }
 
-func getAttribute(node *html.Node, attrName string) string {
+func getAttribute(node *html.Node, name string) string {
 	for _, attr := range node.Attr {
-		if attr.Key == attrName {
+		if attr.Key == name {
 			return attr.Val
 		}
 	}
@@ -134,15 +149,11 @@ func NewHtmlNode(lang string) *html.Node {
 	return n
 }
 
-func NewBodyNode() *html.Node {
-	n := newElementNode("body", atom.Body)
-	return n
-}
-
 func Decode(node *html.Node) string {
 	var buf bytes.Buffer
+	buf.WriteString("<!DOCTYPE html>")
 	html.Render(&buf, node)
-	return "<!DOCTYPE html>" + buf.String()
+	return buf.String()
 }
 
 func getLastModTime(src string) string {
@@ -155,7 +166,7 @@ func getLastModTime(src string) string {
 
 func newTimestampNode(src string) *html.Node {
 	d := newDivNode()
-	appendClass(d, "timestamp")
+	setId(d, "timestamp")
 	m := getLastModTime(src)
 	d.AppendChild(newTextNode(fmt.Sprintf("update: %s", m)))
 	return d
