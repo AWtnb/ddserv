@@ -43,9 +43,7 @@ func render(src, suffix string, plain bool) error {
 	doc.AppendChild(b)
 
 	o := strings.TrimSuffix(src, filepath.Ext(src)) + suffix + ".html"
-	writeFile(domtree.Decode(doc), o)
-
-	return nil
+	return writeFile(domtree.Decode(doc), o)
 }
 
 func run(src, suffix string, plain bool) int {
