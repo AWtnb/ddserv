@@ -24,7 +24,7 @@ func getHeadMarkup(title string) string {
 	return fmt.Sprintf(`<head>%s</head>`, buf.String())
 }
 
-func NewHeadNode(title, css string) *html.Node {
+func NewHeadNode(title string, plain bool) *html.Node {
 	head := newHeadNode()
 	m := getHeadMarkup(title)
 	h, _ := html.ParseFragment(strings.NewReader(m), newHeadNode())
@@ -32,17 +32,16 @@ func NewHeadNode(title, css string) *html.Node {
 		head.AppendChild(n)
 	}
 
-	if 0 < len(css) {
+	if !plain {
 		l := newLinkNode()
 		appendAttr(l, "type", "text/css")
-		appendAttr(l, "href", css)
+		appendAttr(l, "rel", "stylesheet/less")
+		appendAttr(l, "href", "https://cdn.jsdelivr.net/gh/Awtnb/md-less/style.less")
 		head.AppendChild(l)
-		if strings.HasSuffix(css, ".less") {
-			appendAttr(l, "rel", "stylesheet/less")
-			s := newScriptNode()
-			appendAttr(s, "src", "https://cdn.jsdelivr.net/npm/less")
-			head.AppendChild(s)
-		}
+
+		s := newScriptNode()
+		appendAttr(s, "src", "https://cdn.jsdelivr.net/npm/less")
+		head.AppendChild(s)
 	}
 
 	return head

@@ -24,7 +24,7 @@ func writeFile(t, out string) error {
 	return nil
 }
 
-func render(src, css, suffix string) error {
+func render(src, suffix string, plain bool) error {
 	var dt domtree.DomTree
 	if err := dt.Init(src); err != nil {
 		return err
@@ -35,7 +35,7 @@ func render(src, css, suffix string) error {
 
 	doc := domtree.NewHtmlNode("ja")
 
-	h := domtree.NewHeadNode(fm.GetTitle(), css)
+	h := domtree.NewHeadNode(fm.GetTitle(), plain)
 	domtree.AppendStyles(h, fm.GetCSSs())
 	doc.AppendChild(h)
 
@@ -48,8 +48,8 @@ func render(src, css, suffix string) error {
 	return nil
 }
 
-func run(src, css, suffix string) int {
-	err := render(src, css, suffix)
+func run(src, suffix string, plain bool) int {
+	err := render(src, suffix, plain)
 	if err != nil {
 		fmt.Println(err)
 		return 1
@@ -60,17 +60,17 @@ func run(src, css, suffix string) int {
 func main() {
 	var (
 		src    string
-		css    string
 		suffix string
+		plain  bool
 	)
 	flag.StringVar(&src, "src", "", "markdown path")
-	flag.StringVar(&css, "css", "https://cdn.jsdelivr.net/gh/Awtnb/md-less/style.less", "css path or url")
 	flag.StringVar(&suffix, "suffix", "", "suffix of result html")
+	flag.BoolVar(&plain, "plain", false, "flag to skip loading https://cdn.jsdelivr.net/gh/Awtnb/md-less/style.less")
 	flag.Parse()
 
 	if !strings.HasSuffix(src, ".md") {
 		fmt.Printf("invalid path: %s\n", src)
 		os.Exit(1)
 	}
-	os.Exit(run(src, css, suffix))
+	os.Exit(run(src, suffix, plain))
 }
