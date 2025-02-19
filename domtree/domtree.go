@@ -101,6 +101,24 @@ func (dt *DomTree) renderBlankList() {
 	dfs(dt.root)
 }
 
+func (dt *DomTree) renderTableCellWithCheckbox() {
+	var dfs func(*html.Node)
+	dfs = func(node *html.Node) {
+		if node.Type == html.ElementNode && node.Data == "td" {
+			t := strings.TrimSpace(getTextContent(node))
+			if strings.HasPrefix(t, "[") && strings.HasSuffix(t, "]") && len(t) == 3 {
+				node.RemoveChild(node.FirstChild)
+				c := newCheckboxInputNode(true, strings.Index(t, "x") == 1)
+				node.AppendChild(c)
+			}
+		}
+		for c := node.FirstChild; c != nil; c = c.NextSibling {
+			dfs(c)
+		}
+	}
+	dfs(dt.root)
+}
+
 func (dt *DomTree) renderPageBreak() {
 	for c := dt.root.FirstChild; c != nil; c = c.NextSibling {
 		if c.Type == html.ElementNode && c.Data == "p" {
@@ -216,6 +234,7 @@ func (dt *DomTree) setImageContainer() {
 func (dt *DomTree) applyAll() {
 	dt.renderArrowList()
 	dt.renderBlankList()
+	dt.renderTableCellWithCheckbox()
 	dt.renderPageBreak()
 	dt.renderPDFLink()
 	dt.renderCodeblockLabel()
