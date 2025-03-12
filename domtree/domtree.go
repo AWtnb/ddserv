@@ -3,6 +3,7 @@ package domtree
 import (
 	"fmt"
 	"strings"
+	"unicode/utf8"
 
 	meta "github.com/yuin/goldmark-meta"
 	"github.com/yuin/goldmark/parser"
@@ -168,8 +169,8 @@ func (dt *DomTree) fixHeadingSpacing() {
 	var dfs func(*html.Node)
 	dfs = func(node *html.Node) {
 		if node.Type == html.ElementNode && isHeadingElem(node) && node.FirstChild != nil {
-			t := getTextContent(node)
-			l := len(strings.TrimSpace(t))
+			t := strings.TrimSpace(getTextContent(node))
+			l := utf8.RuneCountInString(t)
 			if 2 <= l && l <= 4 {
 				c := fmt.Sprintf("spacing-%d", l)
 				appendClass(node, c)
