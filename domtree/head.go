@@ -36,7 +36,7 @@ func NewHeadNode(title string, plain bool) *html.Node {
 		l := newLinkNode()
 		appendAttr(l, "type", "text/css")
 		appendAttr(l, "rel", "stylesheet/less")
-		appendAttr(l, "href", "https://cdn.jsdelivr.net/gh/Awtnb/md-less/style.less")
+		appendAttr(l, "href", "https://cdn.jsdelivr.net/gh/Awtnb/md-less@latest/style.less")
 		head.AppendChild(l)
 
 		s := newScriptNode()
