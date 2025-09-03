@@ -63,7 +63,7 @@ func main() {
 	)
 	flag.StringVar(&src, "src", "", "markdown path")
 	flag.StringVar(&suffix, "suffix", "", "suffix of result html")
-	flag.BoolVar(&plain, "plain", false, "flag to skip loading https://cdn.jsdelivr.net/gh/Awtnb/md-less@latest/style.less")
+	flag.BoolVar(&plain, "plain", false, "flag to skip loading https://raw.githubusercontent.com/AWtnb/md-less/refs/heads/main/style.less")
 	flag.Parse()
 
 	if !strings.HasSuffix(src, ".md") {
