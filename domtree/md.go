@@ -9,6 +9,8 @@ import (
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
+
+	alertcallouts "github.com/ZMT-Creative/gm-alert-callouts"
 )
 
 func fromFile(src string) (markup string, context parser.Context, err error) {
@@ -18,7 +20,9 @@ func fromFile(src string) (markup string, context parser.Context, err error) {
 	}
 
 	md := goldmark.New(
-		goldmark.WithExtensions(extension.GFM, meta.Meta),
+		goldmark.WithExtensions(extension.GFM, meta.Meta, alertcallouts.NewAlertCallouts(
+			alertcallouts.UseGFMStrictIcons(),
+		)),
 		goldmark.WithParserOptions(
 			parser.WithAutoHeadingID(),
 		),
