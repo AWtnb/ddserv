@@ -6,6 +6,7 @@ toolchain go1.24.6
 
 require (
 	github.com/ZMT-Creative/gm-alert-callouts v0.7.0
+	github.com/fsnotify/fsnotify v1.9.0
 	github.com/yuin/goldmark v1.7.13
 	github.com/yuin/goldmark-meta v1.1.0
 	golang.org/x/net v0.31.0
