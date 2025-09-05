@@ -61,11 +61,22 @@ func previewOnLocalhost(src string, plain bool) error {
 		if err != nil {
 			return
 		}
-		watcher.Add(src)
+		defer watcher.Close()
+
+		info, err := os.Stat(src)
+		if err != nil {
+			return
+		}
+		if info.IsDir() {
+			watcher.Add(src)
+		} else {
+			watcher.Add(filepath.Dir(src))
+		}
+
 		for {
 			select {
 			case event := <-watcher.Events:
-				if event.Op&fsnotify.Write == fsnotify.Write {
+				if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create {
 					websocket.Message.Send(ws, "reload")
 				}
 			case err := <-watcher.Errors:
