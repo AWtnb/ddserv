@@ -77,7 +77,9 @@ func previewOnLocalhost(src string, plain bool) error {
 			select {
 			case event := <-watcher.Events:
 				if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create {
-					websocket.Message.Send(ws, "reload")
+					if filepath.Ext(event.Name) == ".md" || filepath.Ext(event.Name) == ".css" {
+						websocket.Message.Send(ws, "reload")
+					}
 				}
 			case err := <-watcher.Errors:
 				fmt.Println("watcher error:", err)
