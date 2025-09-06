@@ -53,12 +53,14 @@ func wsReloadHandler(src string) websocket.Handler {
 		defer ws.Close()
 		watcher, err := fsnotify.NewWatcher()
 		if err != nil {
+			fmt.Println(err)
 			return
 		}
 		defer watcher.Close()
 
 		info, err := os.Stat(src)
 		if err != nil {
+			fmt.Println(err)
 			return
 		}
 		if info.IsDir() {
@@ -93,6 +95,7 @@ func htmlHandler(src string, plain bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		html, err := render(src, plain)
 		if err != nil {
+			fmt.Println(err)
 			return
 		}
 		html += reloadScript
