@@ -48,14 +48,8 @@ func render(src string, plain bool) (string, error) {
 	return domtree.Decode(doc), nil
 }
 
-const reloadScript = `
-<script>
-let ws = new WebSocket("ws://" + location.host + "/ws");
-ws.onmessage = function(evt) { if(evt.data === "reload") location.reload(); }
-</script>`
-
-func previewOnLocalhost(src string, plain bool) error {
-	http.Handle("/ws", websocket.Handler(func(ws *websocket.Conn) {
+func wsReloadHandler(src string) websocket.Handler {
+	return func(ws *websocket.Conn) {
 		defer ws.Close()
 		watcher, err := fsnotify.NewWatcher()
 		if err != nil {
@@ -86,8 +80,17 @@ func previewOnLocalhost(src string, plain bool) error {
 				return
 			}
 		}
-	}))
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	}
+}
+
+const reloadScript = `
+<script>
+let ws = new WebSocket("ws://" + location.host + "/socket");
+ws.onmessage = function(evt) { if(evt.data === "reload") location.reload(); }
+</script>`
+
+func htmlHandler(src string, plain bool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		html, err := render(src, plain)
 		if err != nil {
 			return
@@ -95,25 +98,28 @@ func previewOnLocalhost(src string, plain bool) error {
 		html += reloadScript
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		io.WriteString(w, html)
-	})
-	fmt.Println("Serving at http://localhost:8080")
-	return http.ListenAndServe(":8080", nil)
+	}
 }
 
-func run(src, suffix string, plain bool, serve bool) int {
-	if serve {
-		if previewOnLocalhost(src, plain) != nil {
+func run(src string, plain, export bool) int {
+	if export {
+		html, err := render(src, plain)
+		if err != nil {
+			fmt.Println(err)
+			return 1
+		}
+		o := strings.TrimSuffix(src, filepath.Ext(src)) + ".html"
+		if err := writeFile(html, o); err != nil {
+			fmt.Println(err)
 			return 1
 		}
 		return 0
 	}
-	html, err := render(src, plain)
-	if err != nil {
-		fmt.Println(err)
-		return 1
-	}
-	o := strings.TrimSuffix(src, filepath.Ext(src)) + suffix + ".html"
-	if writeFile(html, o) != nil {
+
+	http.Handle("/socket", websocket.Handler(wsReloadHandler(src)))
+	http.HandleFunc("/", htmlHandler(src, plain))
+	fmt.Println("Serving at http://localhost:8080")
+	if http.ListenAndServe(":8080", nil) != nil {
 		return 1
 	}
 	return 0
@@ -122,19 +128,17 @@ func run(src, suffix string, plain bool, serve bool) int {
 func main() {
 	var (
 		src    string
-		suffix string
 		plain  bool
-		serve  bool
+		export bool
 	)
 	flag.StringVar(&src, "src", "", "markdown path")
-	flag.StringVar(&suffix, "suffix", "", "suffix of result html")
-	flag.BoolVar(&plain, "plain", false, "flag to skip loading https://raw.githubusercontent.com/AWtnb/md-less/refs/heads/main/style.less")
-	flag.BoolVar(&serve, "serve", false, "flag to start hot-reload localhost server to preview")
+	flag.BoolVar(&plain, "plain", false, "prevent loading css from https://github.com/AWtnb/md-less")
+	flag.BoolVar(&export, "export", false, "export as sigle html file")
 	flag.Parse()
 
 	if !strings.HasSuffix(src, ".md") {
 		fmt.Printf("invalid path: %s\n", src)
 		os.Exit(1)
 	}
-	os.Exit(run(src, suffix, plain, serve))
+	os.Exit(run(src, plain, export))
 }

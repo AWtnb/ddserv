@@ -1,17 +1,17 @@
 # README
 
-Markdown to html converter.
+markDown Document Server.
 
 
 ```
-> .\m2h.exe -h
-Usage of C:\Users\awtnb\Sync\develop\repo\m2h\m2h.exe:
+> .\ddserv.exe -h
+Usage of ~\go\bin\ddserv.exe:
+  -export
+        export as sigle html file
   -plain
-        flag to skip loading https://raw.githubusercontent.com/AWtnb/md-less/refs/heads/main/style.less
+        prevent loading css from https://github.com/AWtnb/md-less
   -src string
         markdown path
-  -suffix string
-        suffix of result html
 ```
 
 Markdown file can include frontmatter as below:
