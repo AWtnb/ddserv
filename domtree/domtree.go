@@ -2,27 +2,30 @@ package domtree
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"unicode/utf8"
 
 	meta "github.com/yuin/goldmark-meta"
-	"github.com/yuin/goldmark/parser"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 )
 
 type DomTree struct {
+	dir       string
 	root      *html.Node
-	context   parser.Context
+	metaData  map[string]any
 	timestamp *html.Node
 }
 
 func (dt *DomTree) Init(src string) error {
+	dt.dir = filepath.Dir(src)
+
 	mu, ctx, err := fromFile(src)
 	if err != nil {
 		return err
 	}
-	dt.context = ctx
+	dt.metaData = meta.Get(ctx)
 
 	nodes, err := html.ParseFragment(strings.NewReader(mu), newDivNode())
 	if err != nil {
@@ -42,8 +45,34 @@ func (dt *DomTree) Init(src string) error {
 	return nil
 }
 
-func (dt DomTree) GetMetaData() map[string]interface{} {
-	return meta.Get(dt.context)
+func (dt DomTree) GetTitle() string {
+	m := dt.metaData
+	if m == nil {
+		return ""
+	}
+	s, ok := m["title"].(string)
+	if ok {
+		return s
+	}
+	return ""
+}
+
+func (dt DomTree) GetCSSs() (paths []string) {
+	m := dt.metaData
+	if m == nil {
+		return
+	}
+	loadIface, ok := m["load"].([]any)
+	if ok {
+		for _, v := range loadIface {
+			s, ok := v.(string)
+			if ok {
+				p := filepath.Join(dt.dir, s)
+				paths = append(paths, p)
+			}
+		}
+	}
+	return
 }
 
 func (dt DomTree) getTOC() *html.Node {

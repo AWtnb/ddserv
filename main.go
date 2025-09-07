@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/AWtnb/ddserv/domtree"
-	"github.com/AWtnb/ddserv/frontmatter"
 	"github.com/fsnotify/fsnotify"
 	"golang.org/x/net/websocket"
 )
@@ -34,13 +33,10 @@ func render(src string, plain bool) (string, error) {
 		return "", err
 	}
 
-	var fm frontmatter.Frontmatter
-	fm.Init(src, dt.GetMetaData())
-
 	doc := domtree.NewHtmlNode("ja")
 
-	h := domtree.NewHeadNode(fm.GetTitle(), plain)
-	domtree.AppendStyles(h, fm.GetCSSs())
+	h := domtree.NewHeadNode(dt.GetTitle(), plain)
+	domtree.AppendStyles(h, dt.GetCSSs())
 	doc.AppendChild(h)
 
 	b := dt.AsBodyNode()
