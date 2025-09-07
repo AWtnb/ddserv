@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/AWtnb/m2h/domtree"
-	"github.com/AWtnb/m2h/frontmatter"
+	"github.com/AWtnb/ddserv/domtree"
+	"github.com/AWtnb/ddserv/frontmatter"
 	"github.com/fsnotify/fsnotify"
 	"golang.org/x/net/websocket"
 )

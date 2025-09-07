@@ -5,7 +5,6 @@ go 1.23.0
 toolchain go1.24.6
 
 require (
-	github.com/AWtnb/m2h v0.0.0-20250905113517-c5171820743b
 	github.com/ZMT-Creative/gm-alert-callouts v0.7.0
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/yuin/goldmark v1.7.13
