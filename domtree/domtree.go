@@ -2,32 +2,31 @@ package domtree
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 	"unicode/utf8"
 
-	meta "github.com/yuin/goldmark-meta"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 )
 
 type DomTree struct {
-	dir       string
 	root      *html.Node
-	metaData  map[string]any
 	timestamp *html.Node
+	Title     string
+	CssToLoad []string
 }
 
 func (dt *DomTree) Init(src string) error {
-	dt.dir = filepath.Dir(src)
 
-	mu, ctx, err := fromFile(src)
+	m, t, cps, err := fromFile(src)
 	if err != nil {
 		return err
 	}
-	dt.metaData = meta.Get(ctx)
 
-	nodes, err := html.ParseFragment(strings.NewReader(mu), newDivNode())
+	dt.Title = t
+	dt.CssToLoad = cps
+
+	nodes, err := html.ParseFragment(strings.NewReader(m), newDivNode())
 	if err != nil {
 		return err
 	}
@@ -43,36 +42,6 @@ func (dt *DomTree) Init(src string) error {
 	dt.timestamp = newTimestampNode(src)
 
 	return nil
-}
-
-func (dt DomTree) GetTitle() string {
-	m := dt.metaData
-	if m == nil {
-		return ""
-	}
-	s, ok := m["title"].(string)
-	if ok {
-		return s
-	}
-	return ""
-}
-
-func (dt DomTree) GetCSSs() (paths []string) {
-	m := dt.metaData
-	if m == nil {
-		return
-	}
-	loadIface, ok := m["load"].([]any)
-	if ok {
-		for _, v := range loadIface {
-			s, ok := v.(string)
-			if ok {
-				p := filepath.Join(dt.dir, s)
-				paths = append(paths, p)
-			}
-		}
-	}
-	return
 }
 
 func (dt DomTree) getTOC() *html.Node {

@@ -35,8 +35,8 @@ func render(src string, plain bool) (string, error) {
 
 	doc := domtree.NewHtmlNode("ja")
 
-	h := domtree.NewHeadNode(dt.GetTitle(), plain)
-	domtree.AppendStyles(h, dt.GetCSSs())
+	h := domtree.NewHeadNode(dt.Title, plain)
+	domtree.AppendStyles(h, dt.CssToLoad)
 	doc.AppendChild(h)
 
 	b := dt.AsBodyNode()
