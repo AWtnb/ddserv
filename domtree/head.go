@@ -24,24 +24,22 @@ func getHeadMarkup(title string) string {
 	return fmt.Sprintf(`<head>%s</head>`, buf.String())
 }
 
-func NewHeadNode(title string, plain bool) *html.Node {
+func NewHeadNode(title string, baseCss string) *html.Node {
 	head := newHeadNode()
 	m := getHeadMarkup(title)
-	h, _ := html.ParseFragment(strings.NewReader(m), newHeadNode())
+	h, err := html.ParseFragment(strings.NewReader(m), head)
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	for _, n := range h {
 		head.AppendChild(n)
 	}
 
-	if !plain {
-		l := newLinkNode()
-		appendAttr(l, "type", "text/css")
-		appendAttr(l, "rel", "stylesheet/less")
-		appendAttr(l, "href", "https://raw.githubusercontent.com/AWtnb/md-less/refs/heads/main/style.less")
-		head.AppendChild(l)
-
-		s := newScriptNode()
-		appendAttr(s, "src", "https://cdn.jsdelivr.net/npm/less")
-		head.AppendChild(s)
+	if 0 < len(baseCss) {
+		sn := newStyleNode()
+		sn.AppendChild(newTextNode(baseCss))
+		head.AppendChild(sn)
 	}
 
 	return head

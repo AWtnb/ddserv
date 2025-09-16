@@ -2,6 +2,7 @@ package domtree
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"unicode/utf8"
 
@@ -23,16 +24,20 @@ func (dt *DomTree) Init(src string) error {
 		return err
 	}
 
-	dt.Title = t
-	dt.CssToLoad = cps
-
-	nodes, err := html.ParseFragment(strings.NewReader(m), newDivNode())
-	if err != nil {
-		return err
+	if len(t) < 1 {
+		dt.Title = filepath.Base(src)
+	} else {
+		dt.Title = t
 	}
+	dt.CssToLoad = cps
 
 	d := newDivNode()
 	setId(d, "main")
+
+	nodes, err := html.ParseFragment(strings.NewReader(m), d)
+	if err != nil {
+		return err
+	}
 
 	for _, n := range nodes {
 		d.AppendChild(n)

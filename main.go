@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/AWtnb/ddserv/domtree"
 	"github.com/fsnotify/fsnotify"
@@ -27,7 +28,7 @@ func writeFile(t, out string) error {
 	return nil
 }
 
-func render(src string, plain bool) (string, error) {
+func render(src string, css string) (string, error) {
 	var dt domtree.DomTree
 	if err := dt.Init(src); err != nil {
 		return "", err
@@ -35,7 +36,7 @@ func render(src string, plain bool) (string, error) {
 
 	doc := domtree.NewHtmlNode("ja")
 
-	h := domtree.NewHeadNode(dt.Title, plain)
+	h := domtree.NewHeadNode(dt.Title, css)
 	domtree.AppendStyles(h, dt.CssToLoad)
 	doc.AppendChild(h)
 
@@ -87,9 +88,9 @@ let ws = new WebSocket("ws://" + location.host + "/socket");
 ws.onmessage = function(evt) { if(evt.data === "reload") location.reload(); }
 </script>`
 
-func htmlHandler(src string, plain bool) http.HandlerFunc {
+func htmlHandler(src string, css string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		html, err := render(src, plain)
+		html, err := render(src, css)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -100,9 +101,49 @@ func htmlHandler(src string, plain bool) http.HandlerFunc {
 	}
 }
 
+func downloadString(url string) (string, error) {
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("User-Agent", "Go-HTTP-Client/1.1")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("HTTP error: %d %s", resp.StatusCode, resp.Status)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return string(body), nil
+}
+
 func run(src string, plain, export bool) int {
+	css := ""
+	if !plain {
+		u := "https://raw.githubusercontent.com/AWtnb/md-less/refs/heads/main/dist/style.css"
+		s, err := downloadString(u)
+		if err == nil {
+			css = s
+		} else {
+			fmt.Println(err)
+		}
+	}
 	if export {
-		html, err := render(src, plain)
+		html, err := render(src, css)
 		if err != nil {
 			fmt.Println(err)
 			return 1
@@ -116,7 +157,7 @@ func run(src string, plain, export bool) int {
 	}
 
 	http.Handle("/socket", websocket.Handler(wsReloadHandler(src)))
-	http.HandleFunc("/", htmlHandler(src, plain))
+	http.HandleFunc("/", htmlHandler(src, css))
 	fmt.Println("Serving at http://localhost:8080")
 	if http.ListenAndServe(":8080", nil) != nil {
 		return 1

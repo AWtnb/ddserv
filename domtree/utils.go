@@ -131,10 +131,6 @@ func newLiNode() *html.Node {
 	return newElementNode("li", atom.Li)
 }
 
-func newLinkNode() *html.Node {
-	return newElementNode("link", atom.Link)
-}
-
 func newInputNode() *html.Node {
 	return newElementNode("input", atom.Input)
 }
@@ -149,10 +145,6 @@ func newCheckboxInputNode(disabled bool, filled bool) *html.Node {
 		appendAttr(n, "checked", "true")
 	}
 	return n
-}
-
-func newScriptNode() *html.Node {
-	return newElementNode("script", atom.Script)
 }
 
 func newStyleNode() *html.Node {
