@@ -9,7 +9,7 @@ Usage of ~\go\bin\ddserv.exe:
   -export
         export as sigle html file
   -plain
-        prevent loading css from https://github.com/AWtnb/md-less
+        prevent loading css from https://github.com/AWtnb/md-stylesheet
   -src string
         markdown path
 ```

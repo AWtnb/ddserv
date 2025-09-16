@@ -134,7 +134,7 @@ func downloadString(url string) (string, error) {
 func run(src string, plain, export bool) int {
 	css := ""
 	if !plain {
-		u := "https://raw.githubusercontent.com/AWtnb/md-less/refs/heads/main/dist/style.css"
+		u := "https://raw.githubusercontent.com/AWtnb/md-stylesheet/refs/heads/main/dist/style.css"
 		s, err := downloadString(u)
 		if err == nil {
 			css = s
@@ -172,7 +172,7 @@ func main() {
 		export bool
 	)
 	flag.StringVar(&src, "src", "", "markdown path")
-	flag.BoolVar(&plain, "plain", false, "prevent loading css from https://github.com/AWtnb/md-less")
+	flag.BoolVar(&plain, "plain", false, "prevent loading css from https://github.com/AWtnb/md-stylesheet")
 	flag.BoolVar(&export, "export", false, "export as sigle html file")
 	flag.Parse()
 
