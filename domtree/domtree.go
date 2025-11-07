@@ -204,41 +204,58 @@ func (dt *DomTree) setLinkTarget() {
 }
 
 func (dt *DomTree) setImageContainer() {
-	var dfs func(*html.Node)
-	dfs = func(node *html.Node) {
+	var targets []*html.Node
+	var collect func(*html.Node)
+	collect = func(node *html.Node) {
 		if node.Type == html.ElementNode && node.Data == "p" {
-			var imgNode *html.Node
-			for c := node.FirstChild; c != nil; c = c.NextSibling {
-				if c.Type == html.ElementNode && c.Data == "img" {
-					imgNode = c
-					break
-				}
-			}
-
-			if imgNode != nil {
-				container := newDivNode()
-				appendClass(container, "img-container")
-				wrapper := newDivNode()
-				appendClass(wrapper, "img-wrapper")
-
-				if a := getAttribute(imgNode, "alt"); a == "left" || a == "right" {
-					appendAttr(container, "pos", a)
-				}
-
-				node.RemoveChild(imgNode)
-				wrapper.AppendChild(imgNode)
-				container.AppendChild(wrapper)
-				node.Parent.InsertBefore(container, node)
-				node.Parent.RemoveChild(node)
-
-				return
+			if c := node.FirstChild; c != nil && c.Type == html.ElementNode && c.Data == "img" {
+				targets = append(targets, node)
 			}
 		}
 		for c := node.FirstChild; c != nil; c = c.NextSibling {
-			dfs(c)
+			collect(c)
 		}
 	}
-	dfs(dt.root)
+	collect(dt.root)
+
+	for _, node := range targets {
+
+		var imgNode *html.Node
+		var captionNode *html.Node
+
+		for c := node.FirstChild; c != nil; c = c.NextSibling {
+			if c.Type != html.ElementNode {
+				continue
+			}
+			if imgNode == nil && c.Data == "img" {
+				imgNode = c
+			}
+			if captionNode == nil && (c.Data == "em" || c.Data == "strong") {
+				captionNode = c
+			}
+		}
+
+		if imgNode != nil {
+			container := newDivNode()
+			appendClass(container, "img-container")
+			wrapper := newDivNode()
+			appendClass(wrapper, "img-wrapper")
+
+			if a := getAttribute(imgNode, "alt"); a == "left" || a == "right" {
+				appendAttr(container, "pos", a)
+			}
+
+			node.RemoveChild(imgNode)
+			wrapper.AppendChild(imgNode)
+			if captionNode != nil {
+				node.RemoveChild(captionNode)
+				wrapper.AppendChild(captionNode)
+			}
+			container.AppendChild(wrapper)
+			node.Parent.InsertBefore(container, node)
+			node.Parent.RemoveChild(node)
+		}
+	}
 }
 
 func (dt *DomTree) applyAll() {
