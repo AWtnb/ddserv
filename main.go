@@ -156,8 +156,24 @@ func run(src string, plain, export bool) int {
 		return 0
 	}
 
+	root := filepath.Dir(src)
+
 	http.Handle("/socket", websocket.Handler(wsReloadHandler(src)))
-	http.HandleFunc("/", htmlHandler(src, css))
+	handler := htmlHandler(src, css)
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+			handler(w, r)
+			return
+		}
+
+		fp := filepath.Join(root, r.URL.Path)
+		if _, err := os.Stat(fp); err == nil {
+			http.ServeFile(w, r, fp)
+		} else {
+			fmt.Printf("'%s' not found\n", fp)
+		}
+	})
+
 	fmt.Println("Serving at http://localhost:8080")
 	if http.ListenAndServe(":8080", nil) != nil {
 		return 1
