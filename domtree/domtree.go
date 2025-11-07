@@ -214,18 +214,24 @@ func (dt *DomTree) setImageContainer() {
 					break
 				}
 			}
+
 			if imgNode != nil {
 				container := newDivNode()
 				appendClass(container, "img-container")
 				wrapper := newDivNode()
 				appendClass(wrapper, "img-wrapper")
-				if a := getAttribute(node, "alt"); a == "left" || a == "right" {
+
+				if a := getAttribute(imgNode, "alt"); a == "left" || a == "right" {
 					appendAttr(container, "pos", a)
 				}
+
+				node.RemoveChild(imgNode)
 				wrapper.AppendChild(imgNode)
 				container.AppendChild(wrapper)
 				node.Parent.InsertBefore(container, node)
 				node.Parent.RemoveChild(node)
+
+				return
 			}
 		}
 		for c := node.FirstChild; c != nil; c = c.NextSibling {
