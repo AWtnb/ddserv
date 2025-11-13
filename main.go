@@ -48,6 +48,7 @@ func render(src string, css string) (string, error) {
 func wsReloadHandler(src string) websocket.Handler {
 	return func(ws *websocket.Conn) {
 		defer ws.Close()
+
 		watcher, err := fsnotify.NewWatcher()
 		if err != nil {
 			fmt.Println(err)
@@ -66,13 +67,32 @@ func wsReloadHandler(src string) websocket.Handler {
 			watcher.Add(filepath.Dir(src))
 		}
 
+		debounce := time.NewTimer(0)
+		if !debounce.Stop() {
+			<-debounce.C
+		}
+
 		for {
 			select {
 			case event := <-watcher.Events:
-				if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create {
-					if filepath.Ext(event.Name) == ".md" || filepath.Ext(event.Name) == ".css" {
-						websocket.Message.Send(ws, "reload")
+				ext := strings.ToLower(filepath.Ext(event.Name))
+				if ext != ".md" && ext != ".css" {
+					continue
+				}
+
+				if event.Op&(fsnotify.Write|fsnotify.Create) != 0 {
+					if !debounce.Stop() {
+						select {
+						case <-debounce.C:
+						default:
+						}
 					}
+					debounce.Reset(300 * time.Millisecond)
+
+					go func(filename string) {
+						<-debounce.C
+						websocket.Message.Send(ws, "reload")
+					}(event.Name)
 				}
 			case err := <-watcher.Errors:
 				fmt.Println("watcher error:", err)
@@ -192,6 +212,15 @@ func main() {
 	flag.BoolVar(&export, "export", false, "export as sigle html file")
 	flag.Parse()
 
+	info, err := os.Stat(src)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	if info.IsDir() {
+		fmt.Printf("this is directory path: %s\n", src)
+		os.Exit(1)
+	}
 	if !strings.HasSuffix(src, ".md") {
 		fmt.Printf("invalid path: %s\n", src)
 		os.Exit(1)
