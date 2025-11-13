@@ -138,7 +138,8 @@ func (dt *DomTree) renderPDFLink() {
 	var dfs func(*html.Node)
 	dfs = func(node *html.Node) {
 		if node.Type == html.ElementNode && node.Data == "a" {
-			if h := getAttribute(node, "href"); strings.HasSuffix(h, ".pdf") {
+			h := getAttribute(node, "href")
+			if h != getTextContent(node) && strings.HasSuffix(h, ".pdf") {
 				appendAttr(node, "filetype", "pdf")
 			}
 		}
