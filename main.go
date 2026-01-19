@@ -217,7 +217,7 @@ func run(src string, plain, export bool) int {
 
 	<-sigCh
 	fmt.Println("\nShutting down...")
-	fmt.Println("\nExporting snapshot...")
+	fmt.Println("Saving snapshot...")
 	err := writeHtml(src, css, time.Now().Format("_20060102-150405"))
 	if err != nil {
 		fmt.Println(err)
