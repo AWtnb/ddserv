@@ -1,13 +1,16 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/AWtnb/ddserv/domtree"
@@ -23,6 +26,18 @@ func writeFile(t, out string) error {
 	defer f.Close()
 	_, err = f.WriteString(t)
 	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func writeHtml(src, css, suffix string) error {
+	html, err := render(src, css)
+	if err != nil {
+		return err
+	}
+	o := strings.TrimSuffix(src, filepath.Ext(src)) + fmt.Sprintf("%s.html", suffix)
+	if err := writeFile(html, o); err != nil {
 		return err
 	}
 	return nil
@@ -163,13 +178,8 @@ func run(src string, plain, export bool) int {
 		}
 	}
 	if export {
-		html, err := render(src, css)
+		err := writeHtml(src, css, "")
 		if err != nil {
-			fmt.Println(err)
-			return 1
-		}
-		o := strings.TrimSuffix(src, filepath.Ext(src)) + ".html"
-		if err := writeFile(html, o); err != nil {
 			fmt.Println(err)
 			return 1
 		}
@@ -194,10 +204,32 @@ func run(src string, plain, export bool) int {
 		}
 	})
 
-	fmt.Println("Serving at http://localhost:8080")
-	if http.ListenAndServe(":8080", nil) != nil {
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+
+	srv := &http.Server{Addr: ":8080"}
+	go func() {
+		fmt.Println("Serving at http://localhost:8080")
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			fmt.Println(err)
+		}
+	}()
+
+	<-sigCh
+	fmt.Println("\nShutting down...")
+	fmt.Println("\nExporting snapshot...")
+	err := writeHtml(src, css, time.Now().Format("_20060102-150405"))
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		fmt.Println(err)
 		return 1
 	}
+
 	return 0
 }
 
